@@ -53,7 +53,7 @@ abstract contract BookLibraryBase is Ownable{
     }
 
     function getBookUniqueIdentifier(string memory name, string memory author) internal pure returns(uint) {
-        return uint(keccak256(abi.encodePacked(name))) + uint(keccak256(abi.encodePacked(author)));
+        return uint(keccak256(abi.encodePacked(name, author)));
     }
 
     function bookExists(uint bookId) internal view returns(bool) {

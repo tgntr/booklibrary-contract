@@ -12,7 +12,7 @@ abstract contract Ownable
 
     modifier onlyOwner() 
     {
-        require(msg.sender == _owner, "Function accessible only by the owner !!");
+        require(msg.sender == _owner, "Function accessible only by the owner!");
         _;
     }
 }

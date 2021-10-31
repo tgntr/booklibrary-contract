@@ -1,10 +1,19 @@
 const BookLibrary = artifacts.require("BookLibrary");
+const assertUtils = require("./_utils");
 
-const validBookDetail = "valid";
-const invalidBookDetail = "";
-const singleCopy = 1;
-const twoCopies = 2;
-const invalidCopies = 0;
+const NOT_OWNER = "Function accessible only by the owner!";
+const BOOK_ALREADY_EXISTS = "Book already exists!";
+const BOOK_DOESNT_EXIST = "Book does not exist!";
+const INVALID_BOOK_DETAILS = "Book name and author should not be empty!";
+const INVALID_BOOK_COPIES = "Book coopies must be greater than 0!";
+const BOOK_OUT_OF_STOCK = "Book is currently out of stock!";
+const INVALID_BORROW = "Either you are trying to borrow a book more than once or you are trying to return a non-borrowed book!";
+
+const VALID_BOOK_DETAIL = "valid";
+const EMPTY_BOOK_DETAIL = "";
+const SINGLE_COPY = 1;
+const TWO_COPIES = 2;
+const INVALID_COPIES = 0;
 
 contract("BookLibrary", (accounts) => {
     let [owner, user] = accounts;
@@ -14,29 +23,52 @@ contract("BookLibrary", (accounts) => {
         _bookLibrary = await BookLibrary.new();
     });
 
-    context("add new book", async () => {
+    describe("add new book", async () => {
         it("should add book and emit event", async () => {
-            let result = await _bookLibrary.addNewBook(validBookDetail, validBookDetail, singleCopy, { from: owner});
-            console.log(result);
+            const addNewBookResult = await _bookLibrary.addNewBook(VALID_BOOK_DETAIL, VALID_BOOK_DETAIL, SINGLE_COPY, {from: owner});
+            assert(addNewBookResult.logs);
+            const availableBooksResult = await _bookLibrary.getAvailableBooks();
+            assert(availableBooksResult.length === 1);
         })
 
         it("non-owner sender should throw", async () => {
+            assertUtils.shouldThrow(
+                _bookLibrary.addNewBook(VALID_BOOK_DETAIL, VALID_BOOK_DETAIL, SINGLE_COPY, {from: user}),
+                NOT_OWNER
+            );
         })
 
         it("empty name should throw", async () => {
+            assertUtils.shouldThrow(
+                _bookLibrary.addNewBook(EMPTY_BOOK_DETAIL, VALID_BOOK_DETAIL, SINGLE_COPY, {from: owner}),
+                INVALID_BOOK_DETAILS
+            );
         })
 
         it("empty author should throw", async () => {
+            assertUtils.shouldThrow(
+                _bookLibrary.addNewBook(VALID_BOOK_DETAIL, EMPTY_BOOK_DETAIL, SINGLE_COPY, {from: owner}),
+                INVALID_BOOK_DETAILS
+            );
         })
 
         it("non-positive copies should throw", async () => {
+            assertUtils.shouldThrow(
+                _bookLibrary.addNewBook(VALID_BOOK_DETAIL, VALID_BOOK_DETAIL, INVALID_COPIES, {from: owner}),
+                INVALID_BOOK_COPIES
+            );
         })
 
         it("existing book should throw", async () => {
+            await _bookLibrary.addNewBook(VALID_BOOK_DETAIL, VALID_BOOK_DETAIL, SINGLE_COPY, {from: owner});
+            assertUtils.shouldThrow(
+                _bookLibrary.addNewBook(VALID_BOOK_DETAIL, VALID_BOOK_DETAIL, SINGLE_COPY, {from: owner}),
+                BOOK_ALREADY_EXISTS
+            );
         })
     })
 
-    context("add available copies", async () => {
+    describe("add available copies", async () => {
         it("should increase copies and emit event", async () => {
         })
 
@@ -53,7 +85,7 @@ contract("BookLibrary", (accounts) => {
         })
     })
 
-    context("get available books", async () => {
+    describe("get available books", async () => {
         it("should return only available books", async () => {
         })
 
@@ -61,7 +93,7 @@ contract("BookLibrary", (accounts) => {
         })
     })
 
-    context("borrow book", async () => {
+    describe("borrow book", async () => {
         it("should decrease book available copies, update borrower status, add borrower to borrowers list and emit event", async () => {
         })
 
@@ -81,7 +113,7 @@ contract("BookLibrary", (accounts) => {
         })
     })
 
-    context("return book", async () => {
+    describe("return book", async () => {
         it("should increase book available copies, update borrower status and emit event, should not update borrowers list", async () => {
         })
 
@@ -95,7 +127,7 @@ contract("BookLibrary", (accounts) => {
         })
     })
 
-    context("get book borrowers list", async () => {
+    describe("get book borrowers list", async () => {
         it("should return all borrowers", async () => {
         })
 
