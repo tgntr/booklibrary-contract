@@ -26,7 +26,10 @@ contract("BookLibrary", (accounts) => {
     describe("add new book", async () => {
         it("should add book and emit event", async () => {
             const addNewBookResult = await _bookLibrary.addNewBook(VALID_BOOK_DETAIL, VALID_BOOK_DETAIL, SINGLE_COPY, {from: owner});
-            assert(addNewBookResult.logs);
+            const newBookEvent = addNewBookResult.logs[0].args;
+            assert.equal(newBookEvent.name, VALID_BOOK_DETAIL);
+            assert.equal(newBookEvent.author, VALID_BOOK_DETAIL);
+            assert.equal(newBookEvent.availableCopies, SINGLE_COPY);
             const availableBooksResult = await _bookLibrary.getAvailableBooks();
             assert(availableBooksResult.length === 1);
         })

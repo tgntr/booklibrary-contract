@@ -7,10 +7,13 @@ import "./BookLibraryBase.sol";
 contract BookLibrary is BookLibraryBase {
     function addNewBook(string calldata name, string calldata author, uint8 copies) external onlyOwner nonEmptyBookDetails(name, author) positiveCopies(copies) {
         uint bookId = getBookUniqueIdentifier(name, author);
-        require(!bookExists(bookId), BOOK_ALREADY_EXISTS);
+        require(
+            !bookExists(bookId),
+            "Book already exists!");
         createBook(bookId, name, author, copies);
         _bookIds.push(bookId);
-        emit NewBookAdded(bookId, name, author);
+        Book storage book = _books[bookId];
+        emit NewBookAdded(bookId, book.name, book.author, book.availableCopies);
     }
 
     function addAvailableCopies(uint bookId, uint8 copies) external onlyOwner existingBook(bookId) positiveCopies(copies) {

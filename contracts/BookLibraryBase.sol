@@ -11,16 +11,8 @@ abstract contract BookLibraryBase is Ownable{
         address[] borrowerIds;
         mapping(address => BorrowStatus) borrowers;
     }
-    
     enum BorrowStatus { NeverBorrowed, Borrowed, Returned }
-    string internal constant BOOK_ALREADY_EXISTS = "Book already exists!";
-    string internal constant BOOK_DOESNT_EXIST = "Book does not exist!";
-    string internal constant INVALID_BOOK_DETAILS = "Book name and author should not be empty!";
-    string internal constant INVALID_BOOK_COPIES = "Book coopies must be greater than 0!";
-    string internal constant BOOK_OUT_OF_STOCK = "Book is currently out of stock!";
-    string internal constant INVALID_BORROW = "Either you are trying to borrow a book more than once or you are trying to return a non-borrowed book!";
-
-    event NewBookAdded(uint bookid, string name, string author);
+    event NewBookAdded(uint bookid, string name, string author, uint8 availableCopies);
     event BookOutOfStock(uint bookId, string name, string author);
     event BookBackInStock(uint bookId, string name, string author);
 
@@ -28,27 +20,37 @@ abstract contract BookLibraryBase is Ownable{
     mapping(uint => Book) internal _books;
 
     modifier existingBook(uint bookId) {
-        require(bookExists(bookId), BOOK_DOESNT_EXIST);
+        require(
+            bookExists(bookId),
+            "Book does not exist!");
         _;
     }
 
     modifier nonEmptyBookDetails(string memory name, string memory author) {
-        require(bytes(name).length != 0 && bytes(author).length != 0, INVALID_BOOK_DETAILS);
+        require(
+            bytes(name).length != 0 && bytes(author).length != 0,
+            "Book name and author should not be empty!");
         _;
     }
 
     modifier positiveCopies(uint copies) {
-        require(copies > 0, INVALID_BOOK_COPIES);
+        require(
+            copies > 0,
+            "Book coopies must be greater than 0!");
         _;
     }
 
     modifier availableBookCopies(uint bookId) {
-        require(bookHasAvailableCopies(bookId), BOOK_OUT_OF_STOCK);
+        require(
+            bookHasAvailableCopies(bookId),
+            "Book is currently out of stock!");
         _;
     }
 
     modifier currentlyBorrowedBook(uint bookId, bool isCurrentlyBorrowed) {
-        require((_books[bookId].borrowers[msg.sender] == BorrowStatus.Borrowed) == isCurrentlyBorrowed, INVALID_BORROW);
+        require(
+            (_books[bookId].borrowers[msg.sender] == BorrowStatus.Borrowed) == isCurrentlyBorrowed,
+            "Either you are trying to borrow a book more than once or you are trying to return a non-borrowed book!");
         _;
     }
 
