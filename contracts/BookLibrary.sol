@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
 import "./Ownable.sol";
@@ -5,20 +6,24 @@ import "./BookLibraryBase.sol";
 
 contract BookLibrary is BookLibraryBase {
     function addNewBook(string calldata name, string calldata author, uint8 copies) external onlyOwner nonEmptyBookDetails(name, author) positiveCopies(copies) {
-        uint bookId = getBookUniqueIdentifier(name, author);(name, author);
+        uint bookId = getBookUniqueIdentifier(name, author);
         require(!bookExists(bookId), BOOK_ALREADY_EXISTS);
         createBook(bookId, name, author, copies);
         _bookIds.push(bookId);
         emit NewBookAdded(bookId, name, author);
     }
 
+    function addAvailableCopies(uint bookId, uint8 copies) external onlyOwner existingBook(bookId) positiveCopies(copies) {
+        increaseAvailableCopies(bookId, copies);
+    }
+
     function borrowBook(uint bookId) external existingBook(bookId) availableBookCopies(bookId) currentlyBorrowedBook(bookId, false) {
-        removeAvailableCopy(bookId);
+        decreaseAvailableCopies(bookId);(bookId);
         updateBorrowerStatus(bookId, BorrowStatus.Borrowed);
     }
     
     function returnBook(uint bookId) external existingBook(bookId) currentlyBorrowedBook(bookId, true) {
-        addAvailableCopies(bookId, 1);
+        increaseAvailableCopies(bookId, 1);
         updateBorrowerStatus(bookId, BorrowStatus.Returned);
     }
 
@@ -38,8 +43,15 @@ contract BookLibrary is BookLibraryBase {
     function getBookBorrowersList(uint bookId) external view existingBook(bookId) returns(address[] memory) {
         return _books[bookId].borrowerIds;
     }
-    
-    function addAvailableCopies(uint bookId, uint8 copies) public existingBook(bookId) positiveCopies(copies) {
+
+    function createBook(uint bookId, string calldata name, string calldata author, uint8 copies) private {
+        Book storage book = _books[bookId];
+        book.name = name;
+        book.author = author;
+        book.availableCopies = copies;
+    }
+
+    function increaseAvailableCopies(uint bookId, uint8 copies) private {
         Book storage book = _books[bookId];
         if (!bookHasAvailableCopies(bookId)) {
             emit BookBackInStock(bookId, book.name, book.author);
@@ -47,14 +59,7 @@ contract BookLibrary is BookLibraryBase {
         book.availableCopies += copies;
     }
 
-    function createBook(uint bookId, string memory name, string memory author, uint8 copies) private {
-        Book storage book = _books[bookId];
-        book.name = name;
-        book.author = author;
-        book.availableCopies = copies;
-    }
-
-    function removeAvailableCopy(uint bookId) private {
+    function decreaseAvailableCopies(uint bookId) private {
         Book storage book = _books[bookId];
         book.availableCopies--;
         if (!bookHasAvailableCopies(bookId)) {
