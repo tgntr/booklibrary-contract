@@ -10,7 +10,7 @@ const BOOK_OUT_OF_STOCK_MESSAGE = "Book is currently out of stock!";
 const INVALID_BORROW_MESSAGE = "Either you are trying to borrow a book more than once or you are trying to return a non-borrowed book!";
 
 const NEW_BOOK_ADDED_EVENT = "NewBookAdded";
-const BOOK_OUT_OF_STOCK__EVENT = "BookOutOfStock";
+const BOOK_OUT_OF_STOCK_EVENT = "BookOutOfStock";
 const BOOK_BACK_IN_STOCK_EVENT = "BookBackInStock";
 
 const EMPTY_BOOK_DETAIL = "";
@@ -37,12 +37,10 @@ contract("BookLibrary", (accounts) => {
             const eventType = addNewBookResult.logs[0].event;
             const eventArguments = addNewBookResult.logs[0].args;
             assert.equal(eventType, NEW_BOOK_ADDED_EVENT);
+            assert.equal(eventArguments.bookId.toNumber(), FIRST_VALID_BOOK_ID);
             assert.equal(eventArguments.name, FIRST_VALID_BOOK_DETAIL);
             assert.equal(eventArguments.author, FIRST_VALID_BOOK_DETAIL);
             assert.equal(eventArguments.availableCopies, SINGLE_COPY);
-            const availableBooksResult = await _bookLibrary.getAvailableBooks();
-            assert.equal(availableBooksResult.length, 1);
-            assert.equal (availableBooksResult[0].toNumber(), FIRST_VALID_BOOK_ID);
         })
 
         it("non-owner sender should throw", async () => {
@@ -86,26 +84,20 @@ contract("BookLibrary", (accounts) => {
         it("should increase copies and emit event", async () => {
             await _bookLibrary.addNewBook(FIRST_VALID_BOOK_DETAIL, FIRST_VALID_BOOK_DETAIL, SINGLE_COPY, {from: owner});
             await _bookLibrary.borrowBook(FIRST_VALID_BOOK_ID);
-            let availableBooksResult = await _bookLibrary.getAvailableBooks();
-            assert.equal(availableBooksResult[0].toNumber(), 0);
             const addAvailableCopiesResult = await _bookLibrary.addAvailableCopies(FIRST_VALID_BOOK_ID, SINGLE_COPY, {from: owner});
             const eventType = addAvailableCopiesResult.logs[0].event;
             const eventArguments = addAvailableCopiesResult.logs[0].args;
             assert.equal(eventType, BOOK_BACK_IN_STOCK_EVENT);
             assert.equal(eventArguments.bookId.toNumber(), FIRST_VALID_BOOK_ID);
-            availableBooksResult = await _bookLibrary.getAvailableBooks();
-            assert.equal(availableBooksResult.length, 1);
-            assert.equal(availableBooksResult[0].toNumber(), FIRST_VALID_BOOK_ID);
         })
 
         it("available book should not emit event", async () => {
             await _bookLibrary.addNewBook(FIRST_VALID_BOOK_DETAIL, FIRST_VALID_BOOK_DETAIL, SINGLE_COPY, {from: owner});
             const addAvailableCopiesResult = await _bookLibrary.addAvailableCopies(FIRST_VALID_BOOK_ID, SINGLE_COPY, {from: owner});
-            assert(addAvailableCopiesResult.logs.length === 0);
+            assert.equal(addAvailableCopiesResult.logs.length, 0);
         })
 
         it("non-owner sender should throw", async () => {
-            await _bookLibrary.addNewBook(FIRST_VALID_BOOK_DETAIL, FIRST_VALID_BOOK_DETAIL, SINGLE_COPY, {from: owner});
             await assertUtils.shouldThrow(
                 _bookLibrary.addAvailableCopies(FIRST_VALID_BOOK_ID, SINGLE_COPY, {from: user}),
                 NOT_OWNER_MESSAGE
@@ -134,13 +126,20 @@ contract("BookLibrary", (accounts) => {
             await _bookLibrary.borrowBook(FIRST_VALID_BOOK_ID);
             await _bookLibrary.addNewBook(SECOND_VALID_BOOK_DETAIL, SECOND_VALID_BOOK_DETAIL, SINGLE_COPY, {from: owner});
             const availableBooksResult = await _bookLibrary.getAvailableBooks();
-            assert.equal(availableBooksResult[1].toNumber(), 0);
+            assert.equal(availableBooksResult.length, 1);
             assert.equal(availableBooksResult[0].toNumber(), SECOND_VALID_BOOK_ID);
         })
     })
 
     describe("borrow book", async () => {
-        it("should decrease book available copies, update borrower status, add borrower to borrowers list and emit event", async () => {
+        it("should decrease book available copies, add borrower to borrowers list and emit event", async () => {
+            await _bookLibrary.addNewBook(FIRST_VALID_BOOK_DETAIL, FIRST_VALID_BOOK_DETAIL, SINGLE_COPY, {from: owner});
+            const borrowBookResult = await _bookLibrary.borrowBook(FIRST_VALID_BOOK_ID);
+            const eventType = borrowBookResult.logs[0].event;
+            const eventArguments = borrowBookResult.logs[0].args;
+            assert.equal(eventType, BOOK_OUT_OF_STOCK_EVENT);
+            assert.equal(eventArguments.bookId.toNumber(), FIRST_VALID_BOOK_ID);
+            assert.equal((await _bookLibrary.getBookBorrowersList(FIRST_VALID_BOOK_ID)).length, 1);
         })
 
         it("non-first time borrower should not add borrower to borrowers list", async () => {

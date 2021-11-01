@@ -13,6 +13,7 @@ contract BookLibrary is BookLibraryBase {
         createBook(bookId, name, author, copies);
         _bookIds.push(bookId);
         Book storage book = _books[bookId];
+        _currentlyAvailableBooks++;
         emit NewBookAdded(bookId, book.name, book.author, book.availableCopies);
     }
 
@@ -21,7 +22,7 @@ contract BookLibrary is BookLibraryBase {
     }
 
     function getAvailableBooks() external view returns(uint[] memory) {
-        uint[] memory availableBooks = new uint[](_bookIds.length);
+        uint[] memory availableBooks = new uint[](_currentlyAvailableBooks);
         uint counter = 0;
         for (uint i = 0; i < _bookIds.length; i++) {
             uint currentBookId = _bookIds[i];
@@ -47,6 +48,10 @@ contract BookLibrary is BookLibraryBase {
         return _books[bookId].borrowerIds;
     }
 
+    function currentlyAvailableBooksCount() external view returns(uint32) {
+        return _currentlyAvailableBooks;
+    }
+
     function createBook(uint bookId, string calldata name, string calldata author, uint8 copies) private {
         Book storage book = _books[bookId];
         book.name = name;
@@ -57,6 +62,7 @@ contract BookLibrary is BookLibraryBase {
     function increaseAvailableCopies(uint bookId, uint8 copies) private {
         Book storage book = _books[bookId];
         if (!bookHasAvailableCopies(bookId)) {
+            _currentlyAvailableBooks++;
             emit BookBackInStock(bookId, book.name, book.author);
         }
         book.availableCopies += copies;
@@ -66,6 +72,7 @@ contract BookLibrary is BookLibraryBase {
         Book storage book = _books[bookId];
         book.availableCopies--;
         if (!bookHasAvailableCopies(bookId)) {
+            _currentlyAvailableBooks--;
             emit BookOutOfStock(bookId, book.name, book.author);
         }
     }

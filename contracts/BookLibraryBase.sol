@@ -12,12 +12,13 @@ abstract contract BookLibraryBase is Ownable{
         mapping(address => BorrowStatus) borrowers;
     }
     enum BorrowStatus { NeverBorrowed, Borrowed, Returned }
-    event NewBookAdded(uint bookid, string name, string author, uint8 availableCopies);
+    event NewBookAdded(uint bookId, string name, string author, uint8 availableCopies);
     event BookOutOfStock(uint bookId, string name, string author);
     event BookBackInStock(uint bookId, string name, string author);
 
     uint[] internal _bookIds;
     mapping(uint => Book) internal _books;
+    uint32 internal _currentlyAvailableBooks;
 
     modifier existingBook(uint bookId) {
         require(
