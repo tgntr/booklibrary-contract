@@ -35,7 +35,7 @@ contract BookLibrary is BookLibraryBase {
     }
 
     function borrowBook(uint bookId) external existingBook(bookId) availableBookCopies(bookId) currentlyBorrowedBook(bookId, false) {
-        decreaseAvailableCopies(bookId);(bookId);
+        decreaseAvailableCopies(bookId);
         updateBorrowerStatus(bookId, BorrowStatus.Borrowed);
     }
     
