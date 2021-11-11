@@ -3,8 +3,11 @@ node_modules
 coverage
 coverage.json
 typechain
+client
+dist
+package-lock.json
+hardhat.config.ts
 
 #Hardhat files
 cache
 artifacts
-package-lock.json

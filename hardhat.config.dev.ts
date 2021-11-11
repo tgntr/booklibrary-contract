@@ -1,10 +1,12 @@
-require("@nomiclabs/hardhat-waffle");
-require("solidity-coverage");
+import { task } from "hardhat/config";
+import "@nomiclabs/hardhat-waffle";
+import "solidity-coverage";
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 
 // This is a sample Hardhat task. To learn how to create your own go to
 // https://hardhat.org/guides/create-task.html
 task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
-  const accounts = await hre.ethers.getSigners();
+  const accounts: SignerWithAddress[] = await hre.ethers.getSigners();
 
   for (const account of accounts) {
     console.log(account.address);
@@ -17,11 +19,11 @@ task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
 /**
  * @type import('hardhat/config').HardhatUserConfig
  */
-module.exports = {
+export default {
   networks: {
     ropsten: {
-      url: "https://ropsten.infura.io/v3/89f5d8dd47cf42ea9858bba02031f71f",
-      accounts: ['2eb26fc5a92094377c7a80cc5ef08eaaeb2fa25fad2ee1c9fc250ce2bc5161f3']
+      url: "",
+      accounts: []
     }
   },
   solidity: {

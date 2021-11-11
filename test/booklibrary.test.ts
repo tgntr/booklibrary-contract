@@ -1,33 +1,15 @@
-const { BigNumber } = require("@ethersproject/bignumber");
-const { expect } = require("chai");
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
+import { expect } from "chai";
+import { BigNumber, Contract, ContractFactory } from "ethers";
+import { ethers, } from "hardhat";
+import { FIRST_VALID_BOOK_DETAIL, SINGLE_COPY, SECOND_VALID_BOOK_DETAIL, NEW_BOOK_ADDED_EVENT, SECOND_VALID_BOOK_ID, NOT_OWNER_MESSAGE, EMPTY_BOOK_DETAIL, INVALID_COPIES, INVALID_BOOK_COPIES_MESSAGE, BOOK_ALREADY_EXISTS_MESSAGE, FIRST_VALID_BOOK_ID, BOOK_BACK_IN_STOCK_EVENT, INVALID_BOOK_ID, BOOK_DOESNT_EXIST_MESSAGE, BOOK_OUT_OF_STOCK_EVENT, BOOK_OUT_OF_STOCK_MESSAGE, INVALID_BORROW_MESSAGE, TWO_COPIES, INVALID_BOOK_DETAILS_MESSAGE } from "./constants";
 
-const NOT_OWNER_MESSAGE = "Ownable: caller is not the owner";
-const BOOK_ALREADY_EXISTS_MESSAGE = "Book already exists!";
-const BOOK_DOESNT_EXIST_MESSAGE = "Book does not exist!";
-const INFIRST_VALID_BOOK_DETAILS_MESSAGE = "Book name and author should not be empty!";
-const INVALID_BOOK_COPIES_MESSAGE = "Book coopies must be greater than 0!";
-const BOOK_OUT_OF_STOCK_MESSAGE = "Book is currently out of stock!";
-const INVALID_BORROW_MESSAGE = "Either you are trying to borrow a book more than once or you are trying to return a non-borrowed book!";
-
-const NEW_BOOK_ADDED_EVENT = "NewBookAdded";
-const BOOK_OUT_OF_STOCK_EVENT = "BookOutOfStock";
-const BOOK_BACK_IN_STOCK_EVENT = "BookBackInStock";
-
-const EMPTY_BOOK_DETAIL = "";
-const FIRST_VALID_BOOK_DETAIL = "valid";
-const FIRST_VALID_BOOK_ID = 5451230919;
-const SECOND_VALID_BOOK_DETAIL = "secondvalid";
-const SECOND_VALID_BOOK_ID = 8287397125;
-const INVALID_BOOK_ID = 0;
-const SINGLE_COPY = 1;
-const TWO_COPIES = 2;
-const INVALID_COPIES = 0;
 
 describe("BookLibrary", async () => {
-    let _bookLibraryFactory,
-        _bookLibrary,
-        _owner,
-        _user;
+    let _owner: SignerWithAddress;
+    let _user: SignerWithAddress;
+    let _bookLibraryFactory: ContractFactory;
+    let _bookLibrary: Contract
 
     before(async () => {
         _bookLibraryFactory = await ethers.getContractFactory("BookLibrary");
@@ -37,7 +19,7 @@ describe("BookLibrary", async () => {
     beforeEach(async () => {
         _bookLibrary = await _bookLibraryFactory.deploy();
         await _bookLibrary.deployed();
-        await _bookLibrary.addNewBook(FIRST_VALID_BOOK_DETAIL, FIRST_VALID_BOOK_DETAIL, SINGLE_COPY);
+        await _bookLibrary.addNewBook(FIRST_VALID_BOOK_DETAIL,FIRST_VALID_BOOK_DETAIL, SINGLE_COPY);
     });
 
     describe("add new book", async () => {
@@ -54,12 +36,12 @@ describe("BookLibrary", async () => {
 
         it("empty name should throw", async () => {
             await expect(_bookLibrary.addNewBook(EMPTY_BOOK_DETAIL, FIRST_VALID_BOOK_DETAIL, SINGLE_COPY))
-                .to.be.revertedWith(INFIRST_VALID_BOOK_DETAILS_MESSAGE);
+                .to.be.revertedWith(INVALID_BOOK_DETAILS_MESSAGE);
         })
 
         it("empty author should throw", async () => {
             await expect(_bookLibrary.addNewBook(FIRST_VALID_BOOK_DETAIL, EMPTY_BOOK_DETAIL, SINGLE_COPY))
-                .to.be.revertedWith(INFIRST_VALID_BOOK_DETAILS_MESSAGE);
+                .to.be.revertedWith(INVALID_BOOK_DETAILS_MESSAGE);
         })
 
         it("non-positive copies should throw", async () => {
