@@ -23,8 +23,6 @@ const SINGLE_COPY = 1;
 const TWO_COPIES = 2;
 const INVALID_COPIES = 0;
 
-
-
 describe("BookLibrary", async () => {
     let _bookLibraryFactory,
         _bookLibrary,
