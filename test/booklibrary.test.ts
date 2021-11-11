@@ -4,21 +4,23 @@ import { BigNumber, Contract, ContractFactory } from "ethers";
 import { ethers, } from "hardhat";
 import { FIRST_VALID_BOOK_DETAIL, SINGLE_COPY, SECOND_VALID_BOOK_DETAIL, NEW_BOOK_ADDED_EVENT, SECOND_VALID_BOOK_ID, NOT_OWNER_MESSAGE, EMPTY_BOOK_DETAIL, INVALID_COPIES, INVALID_BOOK_COPIES_MESSAGE, BOOK_ALREADY_EXISTS_MESSAGE, FIRST_VALID_BOOK_ID, BOOK_BACK_IN_STOCK_EVENT, INVALID_BOOK_ID, BOOK_DOESNT_EXIST_MESSAGE, BOOK_OUT_OF_STOCK_EVENT, BOOK_OUT_OF_STOCK_MESSAGE, INVALID_BORROW_MESSAGE, TWO_COPIES, INVALID_BOOK_DETAILS_MESSAGE } from "./constants";
 
-
 describe("BookLibrary", async () => {
     let _owner: SignerWithAddress;
     let _user: SignerWithAddress;
     let _bookLibraryFactory: ContractFactory;
     let _bookLibrary: Contract
+    let _bookLibraryTokenFactory: ContractFactory;
+    let _bookLibraryToken: Contract
 
     before(async () => {
         _bookLibraryFactory = await ethers.getContractFactory("BookLibrary");
+        _bookLibraryTokenFactory = await ethers.getContractFactory("BookLibraryToken");
         [_owner, _user] = await ethers.getSigners();
     })
 
     beforeEach(async () => {
-        _bookLibrary = await _bookLibraryFactory.deploy();
-        await _bookLibrary.deployed();
+        _bookLibraryToken = await _bookLibraryTokenFactory.deploy();
+        _bookLibrary = await _bookLibraryFactory.deploy(_bookLibraryToken.address);
         await _bookLibrary.addNewBook(FIRST_VALID_BOOK_DETAIL,FIRST_VALID_BOOK_DETAIL, SINGLE_COPY);
     });
 
@@ -85,30 +87,6 @@ describe("BookLibrary", async () => {
         })
     })
 
-    describe("get available books", async () => {
-        it("should return all available books", async () => {
-            await _bookLibrary.addNewBook(SECOND_VALID_BOOK_DETAIL, SECOND_VALID_BOOK_DETAIL, SINGLE_COPY);
-
-            expect(await _bookLibrary.getAvailableBooks())
-                .to.eql([BigNumber.from(FIRST_VALID_BOOK_ID), BigNumber.from(SECOND_VALID_BOOK_ID)]);
-        })
-
-        it("borrowing last copy should exclude book ", async () => {
-            await _bookLibrary.borrowBook(FIRST_VALID_BOOK_ID);
-
-            expect(await _bookLibrary.getAvailableBooks())
-                .to.be.empty;
-        })
-
-        it("adding available copies to non-available book should include book ", async () => {
-            await _bookLibrary.borrowBook(FIRST_VALID_BOOK_ID);
-            await _bookLibrary.addAvailableCopies(FIRST_VALID_BOOK_ID, SINGLE_COPY);
-
-            expect(await _bookLibrary.getAvailableBooks())
-                .to.eql([BigNumber.from(FIRST_VALID_BOOK_ID)]);
-        })
-    })
-
     describe("borrow book", async () => {
         it("should emit event", async () => {
             await expect(_bookLibrary.borrowBook(FIRST_VALID_BOOK_ID))
@@ -169,6 +147,30 @@ describe("BookLibrary", async () => {
         it("non-borrowed book should throw", async () => {
             await expect(_bookLibrary.returnBook(FIRST_VALID_BOOK_ID))
                 .to.be.revertedWith(INVALID_BORROW_MESSAGE);
+        })
+    })
+
+    describe("get available books", async () => {
+        it("should return all available books", async () => {
+            await _bookLibrary.addNewBook(SECOND_VALID_BOOK_DETAIL, SECOND_VALID_BOOK_DETAIL, SINGLE_COPY);
+
+            expect(await _bookLibrary.getAvailableBooks())
+                .to.eql([BigNumber.from(FIRST_VALID_BOOK_ID), BigNumber.from(SECOND_VALID_BOOK_ID)]);
+        })
+
+        it("borrowing last copy should exclude book ", async () => {
+            await _bookLibrary.borrowBook(FIRST_VALID_BOOK_ID);
+
+            expect(await _bookLibrary.getAvailableBooks())
+                .to.be.empty;
+        })
+
+        it("adding available copies to non-available book should include book ", async () => {
+            await _bookLibrary.borrowBook(FIRST_VALID_BOOK_ID);
+            await _bookLibrary.addAvailableCopies(FIRST_VALID_BOOK_ID, SINGLE_COPY);
+
+            expect(await _bookLibrary.getAvailableBooks())
+                .to.eql([BigNumber.from(FIRST_VALID_BOOK_ID)]);
         })
     })
 

@@ -15,11 +15,12 @@ async function main() {
   // await hre.run('compile');
 
   // We get the contract to deploy
+  const BookLibraryTokenFactory: ContractFactory = await ethers.getContractFactory("BookLibraryToken");
+  const bookLibraryToken: Contract = await BookLibraryTokenFactory.deploy();
+  console.log("BookLibraryToken deployed to:", bookLibraryToken.address);
+
   const BookLibraryFactory: ContractFactory = await ethers.getContractFactory("BookLibrary");
-  const bookLibrary: Contract = await BookLibraryFactory.deploy();
-
-  await bookLibrary.deployed();
-
+  const bookLibrary: Contract = await BookLibraryFactory.deploy(bookLibraryToken.address);
   console.log("BookLibrary deployed to:", bookLibrary.address);
 }
 

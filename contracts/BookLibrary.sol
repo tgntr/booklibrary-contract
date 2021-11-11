@@ -5,6 +5,10 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "./BookLibraryBase.sol";
 
 contract BookLibrary is BookLibraryBase {
+    constructor(BookLibraryToken tokens) {
+		_tokens = tokens;
+	}
+
     function addNewBook(string calldata name, string calldata author, uint8 copies) external onlyOwner nonEmptyBookDetails(name, author) positiveCopies(copies) {
         uint bookId = getBookUniqueIdentifier(name, author);
         require(
@@ -22,6 +26,11 @@ contract BookLibrary is BookLibraryBase {
     }
 
     function borrowBook(uint bookId) external existingBook(bookId) availableBookCopies(bookId) currentlyBorrowedBook(bookId, false) {
+        uint256 TAX = 0.1 ether;
+        require(
+            _tokens.balanceOf(msg.sender) >= TAX,
+            "You don't have enough tokens! Borrowing tax is 0.1 BLT.");
+        _tokens.transfer(address(this), TAX);e
         decreaseAvailableCopies(bookId);
         updateBorrowerStatus(bookId, BorrowStatus.Borrowed);
     }
