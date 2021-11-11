@@ -21,6 +21,16 @@ contract BookLibrary is BookLibraryBase {
         increaseAvailableCopies(bookId, copies);
     }
 
+    function borrowBook(uint bookId) external existingBook(bookId) availableBookCopies(bookId) currentlyBorrowedBook(bookId, false) {
+        decreaseAvailableCopies(bookId);
+        updateBorrowerStatus(bookId, BorrowStatus.Borrowed);
+    }
+    
+    function returnBook(uint bookId) external existingBook(bookId) currentlyBorrowedBook(bookId, true) {
+        increaseAvailableCopies(bookId, 1);
+        updateBorrowerStatus(bookId, BorrowStatus.Returned);
+    }
+
     function getAvailableBooks() external view returns(uint[] memory) {
         uint[] memory availableBooks = new uint[](_currentlyAvailableBooks);
         uint counter = 0;
@@ -34,22 +44,8 @@ contract BookLibrary is BookLibraryBase {
         return availableBooks;
     }
 
-    function borrowBook(uint bookId) external existingBook(bookId) availableBookCopies(bookId) currentlyBorrowedBook(bookId, false) {
-        decreaseAvailableCopies(bookId);
-        updateBorrowerStatus(bookId, BorrowStatus.Borrowed);
-    }
-    
-    function returnBook(uint bookId) external existingBook(bookId) currentlyBorrowedBook(bookId, true) {
-        increaseAvailableCopies(bookId, 1);
-        updateBorrowerStatus(bookId, BorrowStatus.Returned);
-    }
-
     function getBookBorrowersList(uint bookId) external view existingBook(bookId) returns(address[] memory) {
         return _books[bookId].borrowerIds;
-    }
-
-    function currentlyAvailableBooksCount() external view returns(uint32) {
-        return _currentlyAvailableBooks;
     }
 
     function createBook(uint bookId, string calldata name, string calldata author, uint8 copies) private {
