@@ -9,14 +9,12 @@ contract BookLibrary is BookLibraryBase {
     using SafeMath for uint256;
 
     constructor(BookLibraryToken tokens) {
-		_tokens = tokens;
-	}
+        _tokens = tokens;
+    }
 
     function addNewBook(string calldata name, string calldata author, uint8 copies) external onlyOwner nonEmptyBookDetails(name, author) positiveCopies(copies) {
         uint bookId = getBookUniqueIdentifier(name, author);
-        require(
-            !bookExists(bookId),
-            "Book already exists!");
+        require(!bookExists(bookId),"Book already exists!");
         createBook(bookId, name, author, copies);
         _bookIds.push(bookId);
         Book storage book = _books[bookId];
