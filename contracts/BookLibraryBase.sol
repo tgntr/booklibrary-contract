@@ -30,9 +30,7 @@ abstract contract BookLibraryBase is Ownable{
     BookLibraryToken internal _tokens;
 
     modifier existingBook(uint bookId) {
-        require(
-            bookExists(bookId),
-            "Book does not exist!");
+        require(bookExists(bookId), "Book does not exist!");
         _;
     }
 
@@ -44,16 +42,12 @@ abstract contract BookLibraryBase is Ownable{
     }
 
     modifier positiveCopies(uint copies) {
-        require(
-            copies > 0,
-            "Book coopies must be greater than 0!");
+        require(copies > 0, "Book coopies must be greater than 0!");
         _;
     }
 
     modifier availableBookCopies(uint bookId) {
-        require(
-            bookHasAvailableCopies(bookId),
-            "Book is currently out of stock!");
+        require(bookHasAvailableCopies(bookId), "Book is currently out of stock!");
         _;
     }
 
@@ -65,25 +59,21 @@ abstract contract BookLibraryBase is Ownable{
     }
 
     modifier positiveAmount(uint256 amount) {
-		require(
-            amount > 0 wei,
-            "Must be positive amount!");
+        require(amount > 0 wei, "Must be positive amount!");
         _;
     }
 
     function purchaseTokens() external payable positiveAmount(msg.value) {
-        require(
-            msg.sender.balance >= msg.value,
-            "You don't have enough currency!");
-		_tokens.mint(msg.sender, msg.value);
-		emit TokensPurchased(msg.sender, msg.value);
-	}
+        require(msg.sender.balance >= msg.value, "You don't have enough currency!");
+        _tokens.mint(msg.sender, msg.value);
+        emit TokensPurchased(msg.sender, msg.value);
+    }
 
     function sellTokens(uint256 amount) external positiveAmount(amount) {
-		_tokens.burn(msg.sender, amount);
-		payable(msg.sender).transfer(amount);
-		emit TokensSold(msg.sender, amount);
-	}
+        _tokens.burn(msg.sender, amount);
+        payable(msg.sender).transfer(amount);
+        emit TokensSold(msg.sender, amount);
+    }
 
     function getTokenBalance() external view returns(uint) {
         return _tokens.balanceOf(msg.sender);
