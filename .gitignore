@@ -6,7 +6,12 @@ typechain
 client
 dist
 package-lock.json
+.vscode
+#env variables
 hardhat.config.ts
+
+#solidity compile
+bin
 
 #Hardhat files
 cache

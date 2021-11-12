@@ -3,8 +3,11 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./BookLibraryBase.sol";
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
 contract BookLibrary is BookLibraryBase {
+    using SafeMath for uint256;
+
     constructor(BookLibraryToken tokens) {
 		_tokens = tokens;
 	}
@@ -26,11 +29,9 @@ contract BookLibrary is BookLibraryBase {
     }
 
     function borrowBook(uint bookId) external existingBook(bookId) availableBookCopies(bookId) currentlyBorrowedBook(bookId, false) {
-        uint256 TAX = 0.1 ether;
-        require(
-            _tokens.balanceOf(msg.sender) >= TAX,
-            "You don't have enough tokens! Borrowing tax is 0.1 BLT.");
-        _tokens.transfer(address(this), TAX);e
+        //todo fee should be 0.1 BIT. research math in solidity (decimals, precision)
+        uint256 fee = 1;
+        _tokens.burn(msg.sender, fee);
         decreaseAvailableCopies(bookId);
         updateBorrowerStatus(bookId, BorrowStatus.Borrowed);
     }

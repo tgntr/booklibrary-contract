@@ -3,11 +3,11 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./BookLibraryToken.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
 abstract contract BookLibraryBase is Ownable{
-    using SafeERC20 for IERC20;
-
+    using SafeMath for uint256;
+    
     struct Book {
         string name;
         string author;
@@ -21,8 +21,8 @@ abstract contract BookLibraryBase is Ownable{
     event NewBookAdded(uint bookId, string name, string author, uint8 availableCopies);
     event BookOutOfStock(uint bookId, string name, string author);
     event BookBackInStock(uint bookId, string name, string author);
-    event TokenPurchased(address sender, uint256 amount);
-    event TokenSold(address sender, uint256 amount);
+    event TokensPurchased(address sender, uint256 amount);
+    event TokensSold(address sender, uint256 amount);
 
     uint[] internal _bookIds;
     mapping(uint => Book) internal _books;
@@ -64,19 +64,25 @@ abstract contract BookLibraryBase is Ownable{
         _;
     }
 
-    function buyTokens() external payable {
-		require(msg.value > 0, "Value must be positive!");
+    modifier positiveAmount(uint256 amount) {
+		require(
+            amount > 0 wei,
+            "Must be positive amount!");
+        _;
+    }
+
+    function purchaseTokens() external payable positiveAmount(msg.value) {
+        require(
+            msg.sender.balance >= msg.value,
+            "You don't have enough currency!");
 		_tokens.mint(msg.sender, msg.value);
-		emit TokenPurchased(msg.sender, msg.value);
+		emit TokensPurchased(msg.sender, msg.value);
 	}
 
-    function sellTokens(uint value) external {
-		require(value > 0, "Value must be positive!");
-        //todo see if charges sender TWICE + research if should burn or transfer to owner
-		//_tokens.transferFrom(msg.sender, address(this), value);
-		_tokens.burn(value);
-		payable(msg.sender).transfer(value);
-		emit TokenSold(msg.sender, value);
+    function sellTokens(uint256 amount) external positiveAmount(amount) {
+		_tokens.burn(msg.sender, amount);
+		payable(msg.sender).transfer(amount);
+		emit TokensSold(msg.sender, amount);
 	}
 
     function getTokenBalance() external view returns(uint) {
