@@ -6,7 +6,7 @@ import { ethers, } from "hardhat";
 import { FIRST_VALID_BOOK_DETAIL, SINGLE_COPY, SECOND_VALID_BOOK_DETAIL, NEW_BOOK_ADDED_EVENT, SECOND_VALID_BOOK_ID, NOT_OWNER_MESSAGE,
     EMPTY_BOOK_DETAIL, INVALID_BOOK_COPIES_MESSAGE, BOOK_ALREADY_EXISTS_MESSAGE, FIRST_VALID_BOOK_ID, BOOK_BACK_IN_STOCK_EVENT,
     BOOK_DOESNT_EXIST_MESSAGE, BOOK_OUT_OF_STOCK_EVENT, BOOK_OUT_OF_STOCK_MESSAGE, INVALID_BORROW_MESSAGE, TWO_COPIES,
-    INVALID_BOOK_DETAILS_MESSAGE, EMPTY_ADDRESS, TRANSFER_EVENT, NOT_ENOUGH_CURRENCY_MESSAGE, INSUFFICIENT_AMOUNT, ZERO, INVALID_AMOUNT_MESSAGE} from "./_constants";
+    INVALID_BOOK_DETAILS_MESSAGE, EMPTY_ADDRESS, TRANSFER_EVENT, NOT_ENOUGH_CURRENCY_MESSAGE, INSUFFICIENT_AMOUNT, ZERO, INVALID_AMOUNT_MESSAGE, NOT_ENOUGH_TOKENS_MESSAGE} from "./_constants";
 
 describe("BookLibrary", async () => {
     let _owner: SignerWithAddress;
@@ -33,12 +33,12 @@ describe("BookLibrary", async () => {
         //chaining doesn't work
         //changeTokenBalance assert throws sendTransaction is not a function
         it("should update balances and emit event", async () => {
-            await expect(await _bookLibrary.purchaseTokens({value: 2}))
+            expect(await _bookLibrary.purchaseTokens({value: 2}))
                 .to.changeEtherBalances([_owner, _bookLibrary], [-2, 2]);
-            await expect(await _bookLibrary.purchaseTokens({value: 2}))
+            expect(await _bookLibrary.purchaseTokens({value: 2}))
                  .to.emit(_bookLibraryToken, TRANSFER_EVENT)
                      .withArgs(EMPTY_ADDRESS, _owner.address, 2);
-            await expect(await _bookLibrary.getTokenBalance()).equal(14);
+            expect(await _bookLibrary.getTokenBalance()).equal(14);
         })
 
         it("insufficient amount should revert", async () => {
@@ -50,40 +50,61 @@ describe("BookLibrary", async () => {
         })
 
         it("non-positive amount should revert", async () => {
-            await expect(_bookLibrary.purchaseTokens({value:ZERO}))
+            expect(_bookLibrary.purchaseTokens({value:ZERO}))
+                .to.be.revertedWith(INVALID_AMOUNT_MESSAGE);
+        })
+    })
+
+    describe("sell tokens", async () => {
+        it("should update balances and emit event", async () => {
+            expect(await _bookLibrary.sellTokens(2))
+                .to.changeEtherBalances([_owner, _bookLibrary], [2, -2]);
+            expect(await _bookLibrary.sellTokens(2))
+                 .to.emit(_bookLibraryToken, TRANSFER_EVENT)
+                     .withArgs(_owner.address, EMPTY_ADDRESS , 2);
+            expect(await _bookLibrary.getTokenBalance()).equal(6);
+        })
+
+        it("insufficient amount should revert", async () => {
+            _bookLibrary.sellTokens(INSUFFICIENT_AMOUNT)
+                .catch((error) => expect(error.message).contains(NOT_ENOUGH_TOKENS_MESSAGE));
+        })
+
+        it("non-positive amount should revert", async () => {
+            expect(_bookLibrary.sellTokens(ZERO))
                 .to.be.revertedWith(INVALID_AMOUNT_MESSAGE);
         })
     })
 
     describe("add new book", async () => {
         it("should emit event", async () => {
-            await expect(_bookLibrary.addNewBook(SECOND_VALID_BOOK_DETAIL, SECOND_VALID_BOOK_DETAIL, SINGLE_COPY))
+            expect(_bookLibrary.addNewBook(SECOND_VALID_BOOK_DETAIL, SECOND_VALID_BOOK_DETAIL, SINGLE_COPY))
                 .to.emit(_bookLibrary, NEW_BOOK_ADDED_EVENT)
                 .withArgs(SECOND_VALID_BOOK_ID, SECOND_VALID_BOOK_DETAIL, SECOND_VALID_BOOK_DETAIL, SINGLE_COPY);
         })
 
         it("non-owner sender should revert", async () => {
-            await expect(_bookLibrary.connect(_user).addNewBook(SECOND_VALID_BOOK_DETAIL, SECOND_VALID_BOOK_DETAIL, SINGLE_COPY))
+            expect(_bookLibrary.connect(_user).addNewBook(SECOND_VALID_BOOK_DETAIL, SECOND_VALID_BOOK_DETAIL, SINGLE_COPY))
                 .to.be.revertedWith(NOT_OWNER_MESSAGE);
         })
 
         it("empty name should revert", async () => {
-            await expect(_bookLibrary.addNewBook(EMPTY_BOOK_DETAIL, FIRST_VALID_BOOK_DETAIL, SINGLE_COPY))
+            expect(_bookLibrary.addNewBook(EMPTY_BOOK_DETAIL, FIRST_VALID_BOOK_DETAIL, SINGLE_COPY))
                 .to.be.revertedWith(INVALID_BOOK_DETAILS_MESSAGE);
         })
 
         it("empty author should revert", async () => {
-            await expect(_bookLibrary.addNewBook(FIRST_VALID_BOOK_DETAIL, EMPTY_BOOK_DETAIL, SINGLE_COPY))
+            expect(_bookLibrary.addNewBook(FIRST_VALID_BOOK_DETAIL, EMPTY_BOOK_DETAIL, SINGLE_COPY))
                 .to.be.revertedWith(INVALID_BOOK_DETAILS_MESSAGE);
         })
 
         it("non-positive copies should revert", async () => {
-            await expect(_bookLibrary.addNewBook(FIRST_VALID_BOOK_DETAIL, FIRST_VALID_BOOK_DETAIL, ZERO))
+            expect(_bookLibrary.addNewBook(FIRST_VALID_BOOK_DETAIL, FIRST_VALID_BOOK_DETAIL, ZERO))
                 .to.be.revertedWith(INVALID_BOOK_COPIES_MESSAGE);
         })
 
         it("existing book should revert", async () => {
-            await expect(_bookLibrary.addNewBook(FIRST_VALID_BOOK_DETAIL, FIRST_VALID_BOOK_DETAIL, SINGLE_COPY))
+            expect(_bookLibrary.addNewBook(FIRST_VALID_BOOK_DETAIL, FIRST_VALID_BOOK_DETAIL, SINGLE_COPY))
                 .to.be.revertedWith(BOOK_ALREADY_EXISTS_MESSAGE);
         })
     })
@@ -92,35 +113,35 @@ describe("BookLibrary", async () => {
         it("should emit event", async () => {
             await _bookLibrary.borrowBook(FIRST_VALID_BOOK_ID);
 
-            await expect(_bookLibrary.addAvailableCopies(FIRST_VALID_BOOK_ID, SINGLE_COPY))
+            expect(_bookLibrary.addAvailableCopies(FIRST_VALID_BOOK_ID, SINGLE_COPY))
                 .to.emit(_bookLibrary, BOOK_BACK_IN_STOCK_EVENT)
                 .withArgs(FIRST_VALID_BOOK_ID, FIRST_VALID_BOOK_DETAIL, FIRST_VALID_BOOK_DETAIL);
         })
 
         it("available book should not emit event", async () => {
-            await expect(_bookLibrary.addAvailableCopies(FIRST_VALID_BOOK_ID, SINGLE_COPY))
+            expect(_bookLibrary.addAvailableCopies(FIRST_VALID_BOOK_ID, SINGLE_COPY))
                 .to.not.emit(_bookLibrary, BOOK_BACK_IN_STOCK_EVENT);
         })
 
         it("non-owner sender should revert", async () => {
-            await expect(_bookLibrary.connect(_user).addAvailableCopies(FIRST_VALID_BOOK_ID, SINGLE_COPY))
+            expect(_bookLibrary.connect(_user).addAvailableCopies(FIRST_VALID_BOOK_ID, SINGLE_COPY))
                 .to.be.revertedWith(NOT_OWNER_MESSAGE);
         })
 
         it("non-existing book should revert", async () => {
-            await expect(_bookLibrary.addAvailableCopies(ZERO, SINGLE_COPY))
+            expect(_bookLibrary.addAvailableCopies(ZERO, SINGLE_COPY))
                 .to.be.revertedWith(BOOK_DOESNT_EXIST_MESSAGE);
         })
 
         it("non-positive copies should revert", async () => {
-            await expect(_bookLibrary.addAvailableCopies(FIRST_VALID_BOOK_ID, ZERO))
+            expect(_bookLibrary.addAvailableCopies(FIRST_VALID_BOOK_ID, ZERO))
                 .to.be.revertedWith(INVALID_BOOK_COPIES_MESSAGE);
         })
     })
-
+    //todo test borrow taxes
     describe("borrow book", async () => {
         it("should emit event", async () => {
-            await expect(_bookLibrary.borrowBook(FIRST_VALID_BOOK_ID))
+            expect(_bookLibrary.borrowBook(FIRST_VALID_BOOK_ID))
                 .to.emit(_bookLibrary, BOOK_OUT_OF_STOCK_EVENT)
                 .withArgs(FIRST_VALID_BOOK_ID, FIRST_VALID_BOOK_DETAIL, FIRST_VALID_BOOK_DETAIL);
         })
@@ -128,19 +149,19 @@ describe("BookLibrary", async () => {
         it("available book shout not emit event", async () => {
             await _bookLibrary.addAvailableCopies(FIRST_VALID_BOOK_ID, SINGLE_COPY);
 
-            await expect(_bookLibrary.borrowBook(FIRST_VALID_BOOK_ID))
+            expect(_bookLibrary.borrowBook(FIRST_VALID_BOOK_ID))
                 .to.not.emit(_bookLibrary, BOOK_OUT_OF_STOCK_EVENT);
         })
 
         it("non-existing book should revert", async () => {
-            await expect(_bookLibrary.borrowBook(ZERO))
+            expect(_bookLibrary.borrowBook(ZERO))
                 .to.be.revertedWith(BOOK_DOESNT_EXIST_MESSAGE);
         })
 
         it("non-available book should revert", async () => {
             await _bookLibrary.borrowBook(FIRST_VALID_BOOK_ID);
 
-            await expect(_bookLibrary.borrowBook(FIRST_VALID_BOOK_ID))
+            expect(_bookLibrary.borrowBook(FIRST_VALID_BOOK_ID))
                 .to.be.revertedWith(BOOK_OUT_OF_STOCK_MESSAGE);
         })
 
@@ -148,7 +169,7 @@ describe("BookLibrary", async () => {
             await _bookLibrary.addAvailableCopies(FIRST_VALID_BOOK_ID, SINGLE_COPY);
             await _bookLibrary.borrowBook(FIRST_VALID_BOOK_ID);
 
-            await expect(_bookLibrary.borrowBook(FIRST_VALID_BOOK_ID))
+            expect(_bookLibrary.borrowBook(FIRST_VALID_BOOK_ID))
                 .to.be.revertedWith(INVALID_BORROW_MESSAGE);
         })
     })
@@ -157,7 +178,7 @@ describe("BookLibrary", async () => {
         it("should emit event", async () => {
             await _bookLibrary.borrowBook(FIRST_VALID_BOOK_ID);
 
-            await expect(_bookLibrary.returnBook(FIRST_VALID_BOOK_ID))
+            expect(_bookLibrary.returnBook(FIRST_VALID_BOOK_ID))
                 .to.emit(_bookLibrary, BOOK_BACK_IN_STOCK_EVENT)
                 .withArgs(FIRST_VALID_BOOK_ID, FIRST_VALID_BOOK_DETAIL, FIRST_VALID_BOOK_DETAIL);
         })
@@ -166,17 +187,17 @@ describe("BookLibrary", async () => {
             await _bookLibrary.addAvailableCopies(FIRST_VALID_BOOK_ID, SINGLE_COPY);
             await _bookLibrary.borrowBook(FIRST_VALID_BOOK_ID);
 
-            await expect(_bookLibrary.returnBook(FIRST_VALID_BOOK_ID))
+            expect(_bookLibrary.returnBook(FIRST_VALID_BOOK_ID))
                 .to.not.emit(_bookLibrary, BOOK_BACK_IN_STOCK_EVENT)
         })
 
         it("non-existing book should revert", async () => {
-            await expect(_bookLibrary.returnBook(ZERO))
+            expect(_bookLibrary.returnBook(ZERO))
                 .to.be.revertedWith(BOOK_DOESNT_EXIST_MESSAGE);
         })
 
         it("non-borrowed book should revert", async () => {
-            await expect(_bookLibrary.returnBook(FIRST_VALID_BOOK_ID))
+            expect(_bookLibrary.returnBook(FIRST_VALID_BOOK_ID))
                 .to.be.revertedWith(INVALID_BORROW_MESSAGE);
         })
     })

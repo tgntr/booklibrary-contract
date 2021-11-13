@@ -16,10 +16,8 @@ contract BookLibrary is BookLibraryBase {
         uint bookId = getBookUniqueIdentifier(name, author);
         require(!bookExists(bookId),"Book already exists!");
         createBook(bookId, name, author, copies);
-        _bookIds.push(bookId);
-        Book storage book = _books[bookId];
         _currentlyAvailableBooks++;
-        emit NewBookAdded(bookId, book.name, book.author, book.availableCopies);
+        emit NewBookAdded(bookId, name, author, copies);
     }
 
     function addAvailableCopies(uint bookId, uint8 copies) external onlyOwner existingBook(bookId) positiveCopies(copies) {
@@ -61,6 +59,7 @@ contract BookLibrary is BookLibraryBase {
         book.name = name;
         book.author = author;
         book.availableCopies = copies;
+        _bookIds.push(bookId);
     }
 
     function increaseAvailableCopies(uint bookId, uint8 copies) private {
