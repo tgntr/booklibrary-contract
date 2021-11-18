@@ -4,9 +4,11 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./BookLibraryBase.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 contract BookLibrary is BookLibraryBase {
     using SafeMath for uint256;
+    using ECDSA for bytes32;
 
     constructor(BookLibraryToken tokens) {
         _tokens = tokens;
@@ -24,17 +26,23 @@ contract BookLibrary is BookLibraryBase {
         increaseAvailableCopies(bookId, copies);
     }
 
-    function borrowBook(uint bookId) external existingBook(bookId) availableBookCopies(bookId) currentlyBorrowedBook(bookId, false) {
+    function borrowBook(uint bookId, address borrower) public existingBook(bookId) availableBookCopies(bookId) currentlyBorrowedBook(bookId, borrower, false) {
         //todo fee should be 0.1 BIT. research math in solidity (decimals, precision)
         uint256 fee = 1;
-        _tokens.burn(msg.sender, fee);
+        _tokens.burn(borrower, fee);
         decreaseAvailableCopies(bookId);
-        updateBorrowerStatus(bookId, BorrowStatus.Borrowed);
+        updateBorrowerStatus(bookId, borrower, BorrowStatus.Borrowed);
     }
-    
-    function returnBook(uint bookId) external existingBook(bookId) currentlyBorrowedBook(bookId, true) {
+
+    function borrowBookWithSignature(uint bookId, address borrower, bytes calldata signature) external existingBook(bookId) availableBookCopies(bookId) currentlyBorrowedBook(bookId, borrower, false) {
+        address signer = keccak256(abi.encodePacked(bookId)).toEthSignedMessageHash().recover(signature);
+        require(borrower == signer, "Invalid signature!");
+        borrowBook(bookId, borrower);
+    }
+
+    function returnBook(uint bookId) external existingBook(bookId) currentlyBorrowedBook(bookId, msg.sender, true) {
         increaseAvailableCopies(bookId, 1);
-        updateBorrowerStatus(bookId, BorrowStatus.Returned);
+        updateBorrowerStatus(bookId, msg.sender, BorrowStatus.Returned);
     }
 
     function getAvailableBooks() external view returns(uint[] memory) {
@@ -80,12 +88,11 @@ contract BookLibrary is BookLibraryBase {
         }
     }
 
-    function updateBorrowerStatus(uint bookId, BorrowStatus status) private {
-        address userId = msg.sender;
+    function updateBorrowerStatus(uint bookId, address borrower, BorrowStatus status) private {
         Book storage book = _books[bookId];
-        if (status == BorrowStatus.Borrowed && book.borrowers[userId] == BorrowStatus.NeverBorrowed) {
-            book.borrowerIds.push(userId);
+        if (status == BorrowStatus.Borrowed && book.borrowers[borrower] == BorrowStatus.NeverBorrowed) {
+            book.borrowerIds.push(borrower);
         }
-        book.borrowers[userId] = status;
+        book.borrowers[borrower] = status;
     }
 }

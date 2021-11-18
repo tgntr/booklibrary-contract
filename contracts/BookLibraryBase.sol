@@ -51,9 +51,9 @@ abstract contract BookLibraryBase is Ownable{
         _;
     }
 
-    modifier currentlyBorrowedBook(uint bookId, bool isCurrentlyBorrowed) {
+    modifier currentlyBorrowedBook(uint bookId, address borrower, bool isCurrentlyBorrowed) {
         require(
-            (_books[bookId].borrowers[msg.sender] == BorrowStatus.Borrowed) == isCurrentlyBorrowed,
+            (_books[bookId].borrowers[borrower] == BorrowStatus.Borrowed) == isCurrentlyBorrowed,
             "Either you are trying to borrow a book more than once or you are trying to return a non-borrowed book!");
         _;
     }
