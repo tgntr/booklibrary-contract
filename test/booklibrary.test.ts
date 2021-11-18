@@ -96,7 +96,7 @@ describe("BookLibrary", async () => {
         })
 
         it("should reflect book borrow", async () => {
-            await _bookLibrary.borrowBook(FIRST_VALID_BOOK_ID, _owner.address);
+            await _bookLibrary.borrowBook(FIRST_VALID_BOOK_ID);
             expect(await _bookLibrary.getTokenBalance())
                 .equal(9);
         })
@@ -142,7 +142,7 @@ describe("BookLibrary", async () => {
 
     describe("add available copies", async () => {
         it("should emit event", async () => {
-            await _bookLibrary.borrowBook(FIRST_VALID_BOOK_ID, _owner.address);
+            await _bookLibrary.borrowBook(FIRST_VALID_BOOK_ID);
 
             expect(await _bookLibrary.addAvailableCopies(FIRST_VALID_BOOK_ID, SINGLE_COPY))
                 .to.emit(_bookLibrary, BOOK_BACK_IN_STOCK_EVENT)
@@ -172,7 +172,7 @@ describe("BookLibrary", async () => {
 
     describe("borrow book", async () => {
         it("should emit event", async () => {
-            expect(await _bookLibrary.borrowBook(FIRST_VALID_BOOK_ID, _owner.address))
+            expect(await _bookLibrary.borrowBook(FIRST_VALID_BOOK_ID))
                 .to.emit(_bookLibrary, BOOK_OUT_OF_STOCK_EVENT)
                     .withArgs(FIRST_VALID_BOOK_ID, FIRST_VALID_BOOK_DETAIL, FIRST_VALID_BOOK_DETAIL)
                 .and.to.emit(_bookLibraryToken, TRANSFER_EVENT)
@@ -182,35 +182,35 @@ describe("BookLibrary", async () => {
         it("available book shout not emit event", async () => {
             await _bookLibrary.addAvailableCopies(FIRST_VALID_BOOK_ID, SINGLE_COPY);
 
-            expect(await _bookLibrary.borrowBook(FIRST_VALID_BOOK_ID, _owner.address))
+            expect(await _bookLibrary.borrowBook(FIRST_VALID_BOOK_ID))
                 .to.emit(_bookLibraryToken, TRANSFER_EVENT)
                     .withArgs(_owner.address, EMPTY_ADDRESS, BORROW_FEE)
                 .and.not.emit(_bookLibrary, BOOK_OUT_OF_STOCK_EVENT)
         })
 
         it("non-existing book should revert", async () => {
-            await expect(_bookLibrary.borrowBook(ZERO, _owner.address))
+            await expect(_bookLibrary.borrowBook(ZERO))
                 .to.be.revertedWith(BOOK_DOESNT_EXIST_MESSAGE);
         })
 
         it("non-available book should revert", async () => {
-            await _bookLibrary.borrowBook(FIRST_VALID_BOOK_ID, _owner.address);
+            await _bookLibrary.borrowBook(FIRST_VALID_BOOK_ID);
 
-            await expect(_bookLibrary.borrowBook(FIRST_VALID_BOOK_ID, _owner.address))
+            await expect(_bookLibrary.connect(_user).borrowBook(FIRST_VALID_BOOK_ID))
                 .to.be.revertedWith(BOOK_OUT_OF_STOCK_MESSAGE);
         })
 
         it("already borrowed book should revert", async () => {
             await _bookLibrary.addAvailableCopies(FIRST_VALID_BOOK_ID, SINGLE_COPY);
-            await _bookLibrary.borrowBook(FIRST_VALID_BOOK_ID, _owner.address);
+            await _bookLibrary.borrowBook(FIRST_VALID_BOOK_ID);
 
-            await expect(_bookLibrary.borrowBook(FIRST_VALID_BOOK_ID, _owner.address))
+            await expect(_bookLibrary.borrowBook(FIRST_VALID_BOOK_ID))
                 .to.be.revertedWith(INVALID_BORROW_MESSAGE);
         })
 
         it("insufficient token balance should revert", async () => {
             let errorMessage = '';
-            await _bookLibrary.connect(_user).borrowBook(FIRST_VALID_BOOK_ID, _user.address)
+            await _bookLibrary.connect(_user).borrowBook(FIRST_VALID_BOOK_ID)
                 .catch((error) => {
                     errorMessage = error.message;
                     expect(errorMessage).contains(NOT_ENOUGH_TOKENS_MESSAGE);
@@ -249,7 +249,7 @@ describe("BookLibrary", async () => {
 
     describe("return book", async () => {
         it("should emit event", async () => {
-            await _bookLibrary.borrowBook(FIRST_VALID_BOOK_ID, _owner.address);
+            await _bookLibrary.borrowBook(FIRST_VALID_BOOK_ID);
 
             expect(await _bookLibrary.returnBook(FIRST_VALID_BOOK_ID))
                 .to.emit(_bookLibrary, BOOK_BACK_IN_STOCK_EVENT)
@@ -258,7 +258,7 @@ describe("BookLibrary", async () => {
 
         it("returning an available book should not emit event", async () => {
             await _bookLibrary.addAvailableCopies(FIRST_VALID_BOOK_ID, SINGLE_COPY);
-            await _bookLibrary.borrowBook(FIRST_VALID_BOOK_ID, _owner.address);
+            await _bookLibrary.borrowBook(FIRST_VALID_BOOK_ID);
 
             expect(await _bookLibrary.returnBook(FIRST_VALID_BOOK_ID))
                 .to.not.emit(_bookLibrary, BOOK_BACK_IN_STOCK_EVENT)
@@ -286,14 +286,14 @@ describe("BookLibrary", async () => {
         })
 
         it("borrowing last copy should exclude book ", async () => {
-            await _bookLibrary.borrowBook(FIRST_VALID_BOOK_ID, _owner.address);
+            await _bookLibrary.borrowBook(FIRST_VALID_BOOK_ID);
 
             expect(await _bookLibrary.getAvailableBooks())
                 .to.be.empty;
         })
 
         it("adding available copies to non-available book should include book ", async () => {
-            await _bookLibrary.borrowBook(FIRST_VALID_BOOK_ID, _owner.address);
+            await _bookLibrary.borrowBook(FIRST_VALID_BOOK_ID);
             await _bookLibrary.addAvailableCopies(FIRST_VALID_BOOK_ID, SINGLE_COPY);
 
             expect(await _bookLibrary.getAvailableBooks())
@@ -304,16 +304,16 @@ describe("BookLibrary", async () => {
     describe("get book borrowers list", async () => {
         it("should return all unique borrowers", async () => {
             await _bookLibrary.addAvailableCopies(FIRST_VALID_BOOK_ID, TWO_COPIES);
-            await _bookLibrary.borrowBook(FIRST_VALID_BOOK_ID, _owner.address);
+            await _bookLibrary.borrowBook(FIRST_VALID_BOOK_ID);
             await _bookLibrary.connect(_user).purchaseTokens({value: 10});
-            await _bookLibrary.connect(_user).borrowBook(FIRST_VALID_BOOK_ID, _user.address);
+            await _bookLibrary.connect(_user).borrowBook(FIRST_VALID_BOOK_ID);
 
             expect(await _bookLibrary.getBookBorrowersList(FIRST_VALID_BOOK_ID))
                 .to.eql([_owner.address, _user.address]);
         })
 
         it("returning book should include past borrowers", async () => {
-            await _bookLibrary.borrowBook(FIRST_VALID_BOOK_ID, _owner.address);
+            await _bookLibrary.borrowBook(FIRST_VALID_BOOK_ID);
             await _bookLibrary.returnBook(FIRST_VALID_BOOK_ID)
 
             expect(await _bookLibrary.getBookBorrowersList(FIRST_VALID_BOOK_ID))
@@ -321,9 +321,9 @@ describe("BookLibrary", async () => {
         })
 
         it("borrowing twice should distinct unique borrowers", async () => {
-            await _bookLibrary.borrowBook(FIRST_VALID_BOOK_ID, _owner.address);
+            await _bookLibrary.borrowBook(FIRST_VALID_BOOK_ID);
             await _bookLibrary.returnBook(FIRST_VALID_BOOK_ID);
-            await _bookLibrary.borrowBook(FIRST_VALID_BOOK_ID, _owner.address);
+            await _bookLibrary.borrowBook(FIRST_VALID_BOOK_ID);
 
             expect(await _bookLibrary.getBookBorrowersList(FIRST_VALID_BOOK_ID))
                 .to.eql([_owner.address]);

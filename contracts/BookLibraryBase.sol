@@ -29,65 +29,86 @@ abstract contract BookLibraryBase is Ownable{
     uint32 internal _currentlyAvailableBooks;
     BookLibraryToken internal _tokens;
 
-    modifier existingBook(uint bookId) {
+    modifier onlyExistingBook(uint bookId) {
         require(bookExists(bookId), "Book does not exist!");
         _;
     }
 
-    modifier nonEmptyBookDetails(string memory name, string memory author) {
-        require(
-            bytes(name).length != 0 && bytes(author).length != 0,
-            "Book name and author should not be empty!");
-        _;
-    }
-
-    modifier positiveCopies(uint copies) {
+    modifier onlyPositiveCopies(uint copies) {
         require(copies > 0, "Book coopies must be greater than 0!");
         _;
     }
 
-    modifier availableBookCopies(uint bookId) {
-        require(bookHasAvailableCopies(bookId), "Book is currently out of stock!");
-        _;
-    }
-
-    modifier currentlyBorrowedBook(uint bookId, address borrower, bool isCurrentlyBorrowed) {
+    modifier currentlyBorrowedBook(
+        uint bookId,
+        address borrower,
+        bool isCurrentlyBorrowed
+    ) {
         require(
             (_books[bookId].borrowers[borrower] == BorrowStatus.Borrowed) == isCurrentlyBorrowed,
-            "Either you are trying to borrow a book more than once or you are trying to return a non-borrowed book!");
+            "Either you are trying to borrow a book more than once or you are trying to return a non-borrowed book!"
+        );
         _;
     }
 
-    modifier positiveAmount(uint256 amount) {
-        require(amount > 0 wei, "Must be positive amount!");
+    modifier onlyPositiveAmount(uint256 amount) {
+        require(amount > 0 wei, "Amount must be positive!");
         _;
     }
 
-    function purchaseTokens() external payable positiveAmount(msg.value) {
-        require(msg.sender.balance >= msg.value, "You don't have enough currency!");
+    function purchaseTokens()
+      external
+      payable
+      onlyPositiveAmount(msg.value)
+    {
+        require(
+            msg.sender.balance >= msg.value,
+            "You don't have enough currency!"
+        );
         _tokens.mint(msg.sender, msg.value);
         emit TokensPurchased(msg.sender, msg.value);
     }
 
-    function sellTokens(uint256 amount) external positiveAmount(amount) {
+    function sellTokens(uint256 amount)
+      external
+      onlyPositiveAmount(amount)
+    {
         _tokens.burn(msg.sender, amount);
         payable(msg.sender).transfer(amount);
         emit TokensSold(msg.sender, amount);
     }
 
-    function getTokenBalance() external view returns(uint) {
+    function getTokenBalance()
+      external
+      view
+      returns(uint)
+    {
         return _tokens.balanceOf(msg.sender);
     }
 
-    function getBookUniqueIdentifier(string memory name, string memory author) internal pure returns(uint) {
+    function getBookUniqueIdentifier(
+        string memory name,
+        string memory author
+    ) internal
+      pure
+      returns(uint)
+    {
         return uint(keccak256(abi.encodePacked(name, author))) % 10 ** 10;
     }
 
-    function bookExists(uint bookId) internal view returns(bool) {
+    function bookExists(uint bookId)
+      internal
+      view 
+      returns(bool)
+    {
         return bytes(_books[bookId].name).length > 0;
     }
 
-    function bookHasAvailableCopies(uint bookId) internal view returns(bool) {
+    function bookHasAvailableCopies(uint bookId)
+      internal
+      view
+      returns(bool) 
+    {
         return _books[bookId].availableCopies > 0;
     }
 }

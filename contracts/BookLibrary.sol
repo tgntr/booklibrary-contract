@@ -14,7 +14,18 @@ contract BookLibrary is BookLibraryBase {
         _tokens = tokens;
     }
 
-    function addNewBook(string calldata name, string calldata author, uint8 copies) external onlyOwner nonEmptyBookDetails(name, author) positiveCopies(copies) {
+    function addNewBook(
+        string calldata name,
+        string calldata author,
+        uint8 copies
+    ) external
+      onlyOwner
+      onlyPositiveCopies(copies)
+    {
+        require(
+            bytes(name).length != 0 && bytes(author).length != 0,
+            "Book name and author should not be empty!"
+        );
         uint bookId = getBookUniqueIdentifier(name, author);
         require(!bookExists(bookId),"Book already exists!");
         createBook(bookId, name, author, copies);
@@ -22,30 +33,50 @@ contract BookLibrary is BookLibraryBase {
         emit NewBookAdded(bookId, name, author, copies);
     }
 
-    function addAvailableCopies(uint bookId, uint8 copies) external onlyOwner existingBook(bookId) positiveCopies(copies) {
+    function addAvailableCopies(
+        uint bookId,
+        uint8 copies
+    ) external
+      onlyOwner
+      onlyExistingBook(bookId)
+      onlyPositiveCopies(copies)
+    {
         increaseAvailableCopies(bookId, copies);
     }
 
-    function borrowBook(uint bookId, address borrower) public existingBook(bookId) availableBookCopies(bookId) currentlyBorrowedBook(bookId, borrower, false) {
-        //todo fee should be 0.1 BIT. research math in solidity (decimals, precision)
-        uint256 fee = 1;
-        _tokens.burn(borrower, fee);
-        decreaseAvailableCopies(bookId);
-        updateBorrowerStatus(bookId, borrower, BorrowStatus.Borrowed);
+    function borrowBook(uint bookId)
+      external
+    {
+        processBorrowRequest(bookId, msg.sender);
     }
 
-    function borrowBookWithSignature(uint bookId, address borrower, bytes calldata signature) external existingBook(bookId) availableBookCopies(bookId) currentlyBorrowedBook(bookId, borrower, false) {
-        address signer = keccak256(abi.encodePacked(bookId)).toEthSignedMessageHash().recover(signature);
+    function borrowBookWithSignature(
+        uint bookId,
+        address borrower,
+        bytes calldata signature
+    ) external
+    {
+        address signer = keccak256(abi.encodePacked(bookId))
+            .toEthSignedMessageHash()
+            .recover(signature);
         require(borrower == signer, "Invalid signature!");
-        borrowBook(bookId, borrower);
+        processBorrowRequest(bookId, borrower);
     }
 
-    function returnBook(uint bookId) external existingBook(bookId) currentlyBorrowedBook(bookId, msg.sender, true) {
+    function returnBook(uint bookId)
+      external
+      onlyExistingBook(bookId)
+      currentlyBorrowedBook(bookId, msg.sender, true)
+    {
         increaseAvailableCopies(bookId, 1);
         updateBorrowerStatus(bookId, msg.sender, BorrowStatus.Returned);
     }
 
-    function getAvailableBooks() external view returns(uint[] memory) {
+    function getAvailableBooks()
+      external
+      view
+      returns(uint[] memory)
+    {
         uint[] memory availableBooks = new uint[](_currentlyAvailableBooks);
         uint counter = 0;
         for (uint i = 0; i < _bookIds.length; i++) {
@@ -58,11 +89,22 @@ contract BookLibrary is BookLibraryBase {
         return availableBooks;
     }
 
-    function getBookBorrowersList(uint bookId) external view existingBook(bookId) returns(address[] memory) {
+    function getBookBorrowersList(uint bookId)
+      external
+      view
+      onlyExistingBook(bookId)
+      returns(address[] memory)
+    {
         return _books[bookId].borrowerIds;
     }
 
-    function createBook(uint bookId, string calldata name, string calldata author, uint8 copies) private {
+    function createBook(
+        uint bookId,
+        string calldata name,
+        string calldata author,
+        uint8 copies
+    ) private
+    {
         Book storage book = _books[bookId];
         book.name = name;
         book.author = author;
@@ -70,7 +112,29 @@ contract BookLibrary is BookLibraryBase {
         _bookIds.push(bookId);
     }
 
-    function increaseAvailableCopies(uint bookId, uint8 copies) private {
+    function processBorrowRequest(
+        uint bookId,
+        address borrower
+    ) private
+      onlyExistingBook(bookId)
+      currentlyBorrowedBook(bookId, borrower, false)
+    {
+        require(
+            bookHasAvailableCopies(bookId),
+            "Book is currently out of stock!"
+        );
+        //todo fee should be 0.1 BIT. research math in solidity (decimals, precision)
+        uint256 fee = 1;
+        _tokens.burn(borrower, fee);
+        decreaseAvailableCopies(bookId);
+        updateBorrowerStatus(bookId, borrower, BorrowStatus.Borrowed);
+    }
+
+    function increaseAvailableCopies(
+        uint bookId,
+        uint8 copies
+    ) private
+    {
         Book storage book = _books[bookId];
         if (!bookHasAvailableCopies(bookId)) {
             _currentlyAvailableBooks++;
@@ -79,7 +143,9 @@ contract BookLibrary is BookLibraryBase {
         book.availableCopies += copies;
     }
 
-    function decreaseAvailableCopies(uint bookId) private {
+    function decreaseAvailableCopies(uint bookId)
+      private
+    {
         Book storage book = _books[bookId];
         book.availableCopies--;
         if (!bookHasAvailableCopies(bookId)) {
@@ -88,9 +154,16 @@ contract BookLibrary is BookLibraryBase {
         }
     }
 
-    function updateBorrowerStatus(uint bookId, address borrower, BorrowStatus status) private {
+    function updateBorrowerStatus(
+        uint bookId,
+        address borrower,
+        BorrowStatus status
+    ) private
+    {
         Book storage book = _books[bookId];
-        if (status == BorrowStatus.Borrowed && book.borrowers[borrower] == BorrowStatus.NeverBorrowed) {
+        if (status == BorrowStatus.Borrowed &&
+            book.borrowers[borrower] == BorrowStatus.NeverBorrowed)
+        {
             book.borrowerIds.push(borrower);
         }
         book.borrowers[borrower] = status;
