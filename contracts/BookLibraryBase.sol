@@ -24,11 +24,12 @@ abstract contract BookLibraryBase is Ownable{
     event TokensPurchased(address sender, uint256 amount);
     event TokensSold(address sender, uint256 amount);
 
-    uint[] internal _bookIds;
-    mapping(uint => Book) internal _books;
     uint32 internal _currentlyAvailableBooks;
+    uint[] internal _bookIds;
     BookLibraryToken internal _tokens;
     mapping(bytes => bool) internal _submittedSignatures;
+    mapping(uint => Book) internal _books;
+    
 
     modifier onlyExistingBook(uint bookId) {
         require(bookExists(bookId), "Book does not exist!");

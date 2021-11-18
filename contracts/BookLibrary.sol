@@ -84,8 +84,9 @@ contract BookLibrary is BookLibraryBase {
     {
         uint[] memory availableBooks = new uint[](_currentlyAvailableBooks);
         uint counter = 0;
-        for (uint i = 0; i < _bookIds.length; i++) {
-            uint currentBookId = _bookIds[i];
+        uint[] memory bookIds = _bookIds;
+        for (uint i = 0; i < bookIds.length; i++) {
+            uint currentBookId = bookIds[i];
             if (bookHasAvailableCopies(currentBookId)) {
                 availableBooks[counter] = currentBookId;
                 counter++;
