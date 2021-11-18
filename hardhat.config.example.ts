@@ -3,6 +3,7 @@ import "@nomiclabs/hardhat-waffle";
 import "solidity-coverage";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { ContractFactory, Contract } from "ethers";
+import "@nomiclabs/hardhat-etherscan";
 
 // This is a sample Hardhat task. To learn how to create your own go to
 // https://hardhat.org/guides/create-task.html
@@ -34,8 +35,13 @@ export default {
   networks: {
     ropsten: {
       url: "",
-      accounts: []
-    }
+      accounts: ['']
+    },
+  },
+  etherscan: {
+    // Your API key for Etherscan
+    // Obtain one at https://etherscan.io/
+    apiKey: ""
   },
   solidity: {
     version: "0.8.0",
