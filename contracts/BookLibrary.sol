@@ -56,11 +56,16 @@ contract BookLibrary is BookLibraryBase {
         bytes calldata signature
     ) external
     {
+        require(
+            !_submittedSignatures[signature],
+            "Signature can only be used once!"
+        );
         address signer = keccak256(abi.encodePacked(bookId))
             .toEthSignedMessageHash()
             .recover(signature);
         require(borrower == signer, "Invalid signature!");
         processBorrowRequest(bookId, borrower);
+        _submittedSignatures[signature] = true;
     }
 
     function returnBook(uint bookId)

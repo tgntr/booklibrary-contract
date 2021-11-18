@@ -28,6 +28,7 @@ abstract contract BookLibraryBase is Ownable{
     mapping(uint => Book) internal _books;
     uint32 internal _currentlyAvailableBooks;
     BookLibraryToken internal _tokens;
+    mapping(bytes => bool) internal _submittedSignatures;
 
     modifier onlyExistingBook(uint bookId) {
         require(bookExists(bookId), "Book does not exist!");

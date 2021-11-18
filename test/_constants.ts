@@ -11,6 +11,7 @@ export const NOT_ENOUGH_CURRENCY_MESSAGE = "sender doesn\'t have enough funds to
 export const NOT_ENOUGH_TOKENS_MESSAGE = "ERC20: burn amount exceeds balance";
 export const INVALID_AMOUNT_MESSAGE = "Amount must be positive!";
 export const INVALID_SIGNATURE_MESSAGE = "Invalid signature!";
+export const USED_SIGNATURE_MESSAGE = "Signature can only be used once!";
 export const NEW_BOOK_ADDED_EVENT = "NewBookAdded";
 export const BOOK_OUT_OF_STOCK_EVENT = "BookOutOfStock";
 export const BOOK_BACK_IN_STOCK_EVENT = "BookBackInStock";

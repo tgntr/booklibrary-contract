@@ -8,7 +8,7 @@ import { FIRST_VALID_BOOK_DETAIL, SINGLE_COPY, SECOND_VALID_BOOK_DETAIL, NEW_BOO
     EMPTY_BOOK_DETAIL, INVALID_BOOK_COPIES_MESSAGE, BOOK_ALREADY_EXISTS_MESSAGE, FIRST_VALID_BOOK_ID, BOOK_BACK_IN_STOCK_EVENT,
     BOOK_DOESNT_EXIST_MESSAGE, BOOK_OUT_OF_STOCK_EVENT, BOOK_OUT_OF_STOCK_MESSAGE, INVALID_BORROW_MESSAGE, TWO_COPIES, ZERO,
     INVALID_BOOK_DETAILS_MESSAGE, EMPTY_ADDRESS, TRANSFER_EVENT, NOT_ENOUGH_CURRENCY_MESSAGE, INSUFFICIENT_AMOUNT, INVALID_AMOUNT_MESSAGE, 
-    NOT_ENOUGH_TOKENS_MESSAGE, INVALID_SIGNATURE_MESSAGE, BORROW_FEE} from "./_constants";
+    NOT_ENOUGH_TOKENS_MESSAGE, INVALID_SIGNATURE_MESSAGE, BORROW_FEE, USED_SIGNATURE_MESSAGE} from "./_constants";
 
 describe("BookLibrary", async () => {
     let _owner: SignerWithAddress;
@@ -220,14 +220,14 @@ describe("BookLibrary", async () => {
     })
 
     describe("borrow book with signature", async () => {
-        let signature: string;
+        let _signature: string;
 
         before(async () => {
-            signature = await _owner.signMessage(utils.arrayify(utils.solidityKeccak256(['uint'], [FIRST_VALID_BOOK_ID])));
+            _signature = await _owner.signMessage(utils.arrayify(utils.solidityKeccak256(['uint'], [FIRST_VALID_BOOK_ID])));
         })
 
         it("should emit event", async () => {
-            expect(await _bookLibrary.connect(_user).borrowBookWithSignature(FIRST_VALID_BOOK_ID, _owner.address, signature))
+            expect(await _bookLibrary.connect(_user).borrowBookWithSignature(FIRST_VALID_BOOK_ID, _owner.address, _signature))
                 .to.emit(_bookLibraryToken, TRANSFER_EVENT)
                     .withArgs(_owner.address, EMPTY_ADDRESS, BORROW_FEE);
         })
@@ -235,15 +235,22 @@ describe("BookLibrary", async () => {
         it("non-matching borrower should revert", async () => {
             await _bookLibrary.connect(_user).purchaseTokens({value: 10});
 
-            await expect(_bookLibrary.borrowBookWithSignature(FIRST_VALID_BOOK_ID, _user.address, signature))
+            await expect(_bookLibrary.borrowBookWithSignature(FIRST_VALID_BOOK_ID, _user.address, _signature))
                 .to.be.revertedWith(INVALID_SIGNATURE_MESSAGE);
         })
 
         it("non-matching book id should revert", async () => {
             await _bookLibrary.addNewBook(SECOND_VALID_BOOK_DETAIL, SECOND_VALID_BOOK_DETAIL, SINGLE_COPY);
 
-            await expect(_bookLibrary.borrowBookWithSignature(SECOND_VALID_BOOK_ID, _owner.address, signature))
+            await expect(_bookLibrary.borrowBookWithSignature(SECOND_VALID_BOOK_ID, _owner.address, _signature))
                 .to.be.revertedWith(INVALID_SIGNATURE_MESSAGE);
+        })
+
+        it("used signature should revert", async () => {
+            await _bookLibrary.borrowBookWithSignature(FIRST_VALID_BOOK_ID, _owner.address, _signature);
+
+            await expect(_bookLibrary.borrowBookWithSignature(FIRST_VALID_BOOK_ID, _owner.address, _signature))
+                .to.be.revertedWith(USED_SIGNATURE_MESSAGE);
         })
     })
 
